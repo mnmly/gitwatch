@@ -6,6 +6,7 @@
 #   with modifications and contributions by:
 #   - Matthew McGowan
 #   - Dominik D. Geyer
+#   - Konrad Hinsen
 #
 #############################################################################
 #    This program is free software: you can redistribute it and/or modify
@@ -81,12 +82,12 @@ shelp () { # Print a message about how to use this script
     echo "It is therefore recommended to terminate the script before changin the repo's"
     echo "config and restarting it afterwards."
     echo ""
-    echo "By default, gitwatch tries to use the binaries \"git\" and \"inotifywait\","
+    echo "By default, gitwatch tries to use the binaries \"git\" and \"fswatch\","
     echo "expecting to find them in the PATH (it uses 'which' to check this and  will"
     echo "abort with an error if they cannot be found). If you want to use binaries"
     echo "that are named differently and/or located outside of your PATH, you can define"
-    echo "replacements in the environment variables GW_GIT_BIN and GW_INW_BIN for git"
-    echo "and inotifywait, respectively."
+    echo "replacements in the environment variables GW_GIT_BIN and GW_FSW_BIN for git"
+    echo "and fswatch, respectively."
 }
 
 stderr () {
@@ -118,25 +119,25 @@ is_command () { # Tests for the availability of a command
 
 # if custom bin names are given for git or inotifywait, use those; otherwise fall back to "git" and "inotifywait"
 if [ -z "$GW_GIT_BIN" ]; then GIT="git"; else GIT="$GW_GIT_BIN"; fi
-if [ -z "$GW_INW_BIN" ]; then INW="inotifywait"; else INW="$GW_INW_BIN"; fi
+if [ -z "$GW_FSW_BIN" ]; then FSW="fswatch"; else INW="$GW_FSW_BIN"; fi
 
 # Check availability of selected binaries and die if not met
-for cmd in "$GIT" "$INW"; do
+for cmd in "$GIT" "$FSW"; do
 	is_command $cmd || { stderr "Error: Required command '$cmd' not found." ; exit 1; }
 done
 unset cmd
 
 # Expand the path to the target to absolute path
-IN=$(readlink -f "$1")
+IN=$(greadlink -f "$1")
 
 if [ -d $1 ]; then # if the target is a directory
     TARGETDIR=$(sed -e "s/\/*$//" <<<"$IN") # dir to CD into before using git commands: trim trailing slash, if any
-    INCOMMAND="$INW --exclude=\"^${TARGETDIR}/.git\" -qqr -e close_write,move,delete,create $TARGETDIR" # construct inotifywait-commandline
+    FSWCOMMAND="$FSW -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git $TARGETDIR"
     GIT_ADD_ARGS="." # add "." (CWD) recursively to index
     GIT_COMMIT_ARGS="-a" # add -a switch to "commit" call just to be sure
 elif [ -f $1 ]; then # if the target is a single file
     TARGETDIR=$(dirname "$IN") # dir to CD into before using git commands: extract from file name
-    INCOMMAND="$INW -qq -e close_write,move,delete $IN" # construct inotifywait-commandline
+    FSWCOMMAND="$FSW -1 --event Updated --event Removed --event Renamed $IN"
     GIT_ADD_ARGS="$IN" # add only the selected file to index
     GIT_COMMIT_ARGS="" # no need to add anything more to "commit" call
 else
@@ -170,7 +171,7 @@ fi
 
 # main program loop: wait for changes and commit them
 while true; do
-    $INCOMMAND # wait for changes
+    $FSWCOMMAND # wait for changes
     sleep $SLEEP_TIME # wait some more seconds to give apps time to write out all changes
     if [ -n "$DATE_FMT" ]; then
         FORMATTED_COMMITMSG="$(sed "s/%d/$(date "$DATE_FMT")/" <<< "$COMMITMSG")" # splice the formatted date-time into the commit message
