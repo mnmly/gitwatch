@@ -177,9 +177,10 @@ while true; do
         FORMATTED_COMMITMSG="$(sed "s/%d/$(date "$DATE_FMT")/" <<< "$COMMITMSG")" # splice the formatted date-time into the commit message
     fi
     cd $TARGETDIR # CD into right dir
-    $GIT add $GIT_ADD_ARGS # add file(s) to index
-    $GIT commit $GIT_COMMIT_ARGS -m"$FORMATTED_COMMITMSG" # construct commit message and commit
-
+    if [[ $(git status --porcelain) ]]; then # check first if anything happened
+        $GIT add $GIT_ADD_ARGS # add file(s) to index
+        $GIT commit $GIT_COMMIT_ARGS -m"$FORMATTED_COMMITMSG" # construct commit message and commit
+    fi
     if [ -n "$PUSH_CMD" ]; then $PUSH_CMD; fi
 done
 
