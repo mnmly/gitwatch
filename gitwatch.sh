@@ -26,9 +26,8 @@
 #   Idea and original code taken from http://stackoverflow.com/a/965274 
 #       (but heavily modified by now)
 #
-#   Requires the command 'inotifywait' to be available, which is part of
-#   the inotify-tools (See https://github.com/rvoicilas/inotify-tools ),
-#   and (obviously) git.
+#   Requires the command 'fswatch' to be available
+#   (http://emcrisostomo.github.io/fswatch/), and (obviously) git.
 #   Will check the availability of both commands using the `which` command
 #   and will abort if either command (or `which`) is not found.
 #
@@ -117,9 +116,9 @@ is_command () { # Tests for the availability of a command
 	which $1 &>/dev/null
 }
 
-# if custom bin names are given for git or inotifywait, use those; otherwise fall back to "git" and "inotifywait"
+# if custom bin names are given for git or fswatch, use those; otherwise fall back to "git" and "fswatch"
 if [ -z "$GW_GIT_BIN" ]; then GIT="git"; else GIT="$GW_GIT_BIN"; fi
-if [ -z "$GW_FSW_BIN" ]; then FSW="fswatch"; else INW="$GW_FSW_BIN"; fi
+if [ -z "$GW_FSW_BIN" ]; then FSW="fswatch"; else FSW="$GW_FSW_BIN"; fi
 
 # Check availability of selected binaries and die if not met
 for cmd in "$GIT" "$FSW"; do
