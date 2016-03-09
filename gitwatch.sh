@@ -127,21 +127,19 @@ done
 unset cmd
 
 # Expand the path to the target to absolute path
-IN=$(greadlink -f "$1")
+IN=$(greadlink -f "${1}")
 
 if [ -d $1 ]; then # if the target is a directory
     TARGETDIR=$(sed -e "s/\/*$//" <<<"$IN") # dir to CD into before using git commands: trim trailing slash, if any
-    FSWCOMMAND="$FSW -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git $TARGETDIR"
     GIT_ADD_ARGS="." # add "." (CWD) recursively to index
     GIT_COMMIT_ARGS="-a" # add -a switch to "commit" call just to be sure
 elif [ -f $1 ]; then # if the target is a single file
     TARGETDIR=$(dirname "$IN") # dir to CD into before using git commands: extract from file name
-    FSWCOMMAND="$FSW -1 --event Updated --event Removed --event Renamed $IN"
     GIT_ADD_ARGS="$IN" # add only the selected file to index
     GIT_COMMIT_ARGS="" # no need to add anything more to "commit" call
 else
     stderr "Error: The target is neither a regular file nor a directory."
-    exit 1
+    exit
 fi
 
 # Check if commit message needs any formatting (date splicing)
@@ -150,7 +148,7 @@ if ! grep "%d" > /dev/null <<< "$COMMITMSG"; then # if commitmsg didnt contain %
     FORMATTED_COMMITMSG="$COMMITMSG" # save (unchanging) commit message
 fi
 
-cd $TARGETDIR # CD into right dir
+cd "$TARGETDIR" # CD into right dir
 
 if [ -n "$REMOTE" ]; then # are we pushing to a remote?
     if [ -z "$BRANCH" ]; then # Do we have a branch set to push to ?
@@ -170,14 +168,20 @@ fi
 
 # main program loop: wait for changes and commit them
 while true; do
-    $FSWCOMMAND # wait for changes
+    if [ -d $1 ]; then # if the target is a directory
+        "$FSW" -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git "$TARGETDIR"
+    elif [ -f $1 ]; then # if the target is a single file
+        "$FSW" -1 --event Updated --event Removed --event Renamed "$IN"
+    fi
     sleep $SLEEP_TIME # wait some more seconds to give apps time to write out all changes
     if [ -n "$DATE_FMT" ]; then
         FORMATTED_COMMITMSG="$(sed "s/%d/$(date "$DATE_FMT")/" <<< "$COMMITMSG")" # splice the formatted date-time into the commit message
     fi
-    cd $TARGETDIR # CD into right dir
+
+    cd "${TARGETDIR}" # CD into right dir
     if [[ $(git status --porcelain) ]]; then # check first if anything happened
-        $GIT add $GIT_ADD_ARGS # add file(s) to index
+        echo "$FORMATTED_COMMITMSG"
+        $GIT add "$GIT_ADD_ARGS" # add file(s) to index
         $GIT commit $GIT_COMMIT_ARGS -m"$FORMATTED_COMMITMSG" # construct commit message and commit
     fi
     if [ -n "$PUSH_CMD" ]; then $PUSH_CMD; fi
