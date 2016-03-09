@@ -93,6 +93,9 @@ stderr () {
     echo $1 >&2
 }
 
+# Trap interrupts and kill subprocesses
+trap "kill $$" SIGINT
+
 while getopts b:d:hm:p:r:s: option # Process command line options 
 do 
     case "${option}" in 
