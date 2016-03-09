@@ -180,7 +180,6 @@ while true; do
 
     cd "${TARGETDIR}" # CD into right dir
     if [[ $(git status --porcelain) ]]; then # check first if anything happened
-        echo "$FORMATTED_COMMITMSG"
         $GIT add "$GIT_ADD_ARGS" # add file(s) to index
         $GIT commit $GIT_COMMIT_ARGS -m"$FORMATTED_COMMITMSG" # construct commit message and commit
     fi
