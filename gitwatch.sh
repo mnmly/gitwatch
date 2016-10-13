@@ -7,6 +7,7 @@
 #   - Matthew McGowan
 #   - Dominik D. Geyer
 #   - Konrad Hinsen
+#   - Daven Quinn
 #
 #############################################################################
 #    This program is free software: you can redistribute it and/or modify
@@ -23,7 +24,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #############################################################################
 #
-#   Idea and original code taken from http://stackoverflow.com/a/965274 
+#   Idea and original code taken from http://stackoverflow.com/a/965274
 #       (but heavily modified by now)
 #
 #   Requires the command 'fswatch' to be available
@@ -96,9 +97,9 @@ stderr () {
 # Trap interrupts and kill subprocesses
 trap "kill $$" SIGINT
 
-while getopts b:d:hm:p:r:s: option # Process command line options 
-do 
-    case "${option}" in 
+while getopts b:d:hm:p:r:s: option # Process command line options
+do
+    case "${option}" in
         b) BRANCH=${OPTARG};;
         d) DATE_FMT=${OPTARG};;
         h) shelp; exit;;
@@ -142,7 +143,7 @@ elif [ -f $1 ]; then # if the target is a single file
     GIT_COMMIT_ARGS="" # no need to add anything more to "commit" call
 else
     stderr "Error: The target is neither a regular file nor a directory."
-    exit
+    exit 1
 fi
 
 # Check if commit message needs any formatting (date splicing)
