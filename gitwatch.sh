@@ -135,7 +135,7 @@ IN=$(greadlink -f "${1}")
 if [ -d $1 ]; then # if the target is a directory
     TARGETDIR=$(sed -e "s/\/*$//" <<<"$IN") # dir to CD into before using git commands: trim trailing slash, if any
     GIT_ADD_ARGS="." # add "." (CWD) recursively to index
-    GIT_COMMIT_ARGS="-a" # add -a switch to "commit" call just to be sure
+    GIT_COMMIT_ARGS="" # no need to add anything to the "commit" call
 elif [ -f $1 ]; then # if the target is a single file
     TARGETDIR=$(dirname "$IN") # dir to CD into before using git commands: extract from file name
     GIT_ADD_ARGS="$IN" # add only the selected file to index
@@ -151,6 +151,7 @@ if ! grep "%d" > /dev/null <<< "$COMMITMSG"; then # if commitmsg didnt contain %
     FORMATTED_COMMITMSG="$COMMITMSG" # save (unchanging) commit message
 fi
 
+echo "Watching for changes in $1"
 cd "$TARGETDIR" # CD into right dir
 
 if [ -n "$REMOTE" ]; then # are we pushing to a remote?
@@ -182,7 +183,7 @@ while true; do
     fi
 
     cd "${TARGETDIR}" # CD into right dir
-    if [[ $(git status --porcelain) ]]; then # check first if anything happened
+    if [[ $(git status --porcelain .) ]]; then # check first if anything happened
         $GIT add "$GIT_ADD_ARGS" # add file(s) to index
         $GIT commit $GIT_COMMIT_ARGS -m"$FORMATTED_COMMITMSG" # construct commit message and commit
     fi
