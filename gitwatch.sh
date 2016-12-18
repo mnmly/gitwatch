@@ -38,13 +38,14 @@ BRANCH=""
 SLEEP_TIME=2
 DATE_FMT="+%Y-%m-%d %H:%M:%S"
 COMMITMSG="Scripted auto-commit on change (%d) by gitwatch.sh"
+EXCLUDE_PATTERN=""
 
 shelp () { # Print a message about how to use this script
     echo "gitwatch - watch file or directory and git commit all changes as they happen"
     echo ""
     echo "Usage:"
     echo "${0##*/} [-s <secs>] [-d <fmt>] [-r <remote> [-b <branch>]]"
-    echo "          [-m <msg>] <target>"
+    echo "          [-m <msg>] [-e <exclude>] <target>"
     echo ""
     echo "Where <target> is the file or folder which should be watched. The target needs"
     echo "to be in a Git repository, or in the case of a folder, it may also be the top"
@@ -74,6 +75,7 @@ shelp () { # Print a message about how to use this script
     echo "                  (unless the <fmt> specified by -d is empty, in which case %d"
     echo "                  is replaced by an empty string); the default message is:"
     echo "                  \"Scripted auto-commit on change (%d) by gitwatch.sh\""
+    echo " -e <exclude>     Exclude paths matching REGEX. for fswatch"
     echo ""
     echo "As indicated, several conditions are only checked once at launch of the"
     echo "script. You can make changes to the repo state and configurations even while"
@@ -97,7 +99,7 @@ stderr () {
 # Trap interrupts and kill subprocesses
 trap "kill $$" SIGINT
 
-while getopts b:d:hm:p:r:s: option # Process command line options
+while getopts b:d:e:hm:p:r:s option # Process command line options
 do
     case "${option}" in
         b) BRANCH=${OPTARG};;
@@ -106,6 +108,7 @@ do
         m) COMMITMSG=${OPTARG};;
         p|r) REMOTE=${OPTARG};;
         s) SLEEP_TIME=${OPTARG};;
+        e) EXCLUDE_PATTERN=${OPTARG};;
     esac
 done
 
@@ -174,7 +177,11 @@ fi
 # main program loop: wait for changes and commit them
 while true; do
     if [ -d $1 ]; then # if the target is a directory
-        "$FSW" -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git "$TARGETDIR"
+        if [ -n "$EXCLUDE_PATTERN" ]; then
+          "$FSW" -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git --exclude "$EXCLUDE_PATTERN" "$TARGETDIR"
+        else
+          "$FSW" -1 --event Created --event Updated --event Removed --event Renamed -E --exclude .git -E "$TARGETDIR"
+        fi
     elif [ -f $1 ]; then # if the target is a single file
         "$FSW" -1 --event Updated --event Removed --event Renamed "$IN"
     fi
