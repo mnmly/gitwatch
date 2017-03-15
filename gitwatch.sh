@@ -142,7 +142,7 @@ if [ -d $1 ]; then # if the target is a directory
     GIT_COMMIT_ARGS="" # no need to add anything to the "commit" call
 elif [ -f $1 ]; then # if the target is a single file
     TARGETDIR=$(dirname "$IN") # dir to CD into before using git commands: extract from file name
-    GIT_ADD_ARGS="$IN" # add only the selected file to index
+    GIT_ADD_ARGS="." # add only the selected file to index
     GIT_COMMIT_ARGS="" # no need to add anything more to "commit" call
 else
     stderr "Error: The target is neither a regular file nor a directory."
@@ -197,4 +197,3 @@ while true; do
     fi
     if [ -n "$PUSH_CMD" ]; then $PUSH_CMD; fi
 done
-
